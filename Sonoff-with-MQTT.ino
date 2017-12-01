@@ -17,10 +17,10 @@ const char* password = "*********";
 
 /* Sonoff Outputs */
 const int relayPin = 12;  // Active high
-const int ledPin   = 2;  // Active low
+const int ledPin   = 13;  // Active low
 
 /* MQTT Settings */
-const char* mqttTopic = "house/sonoff1";   // MQTT topic
+const char* mqttTopic = "house/sonoff2";   // MQTT topic
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "client-1c6adc"         // Client ID to send to the broker
 const char* mqttuser = "******";
