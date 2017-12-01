@@ -20,9 +20,9 @@ const int relayPin = 12;  // Active high
 const int ledPin   = 13;  // Active low
 
 /* MQTT Settings */
-const char* mqttTopic = "house/sonoff2";   // MQTT topic
+const char* mqttTopic = "house/sonoff1";   // MQTT topic
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
-#define CLIENT_ID "client-1c6adc"         // Client ID to send to the broker
+#define CLIENT_ID "sonoff1"         // Client ID to send to the broker
 const char* mqttuser = "******";
 const char* mqttpass = "******";
 
@@ -47,12 +47,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if(payload[0] == 49)              // Message "1" in ASCII (turn outputs ON)
   {
     digitalWrite(ledPin, LOW);      // LED is active-low, so this turns it on
-    client.publish("house/sonoff2/state", "1"); // Send a status update
+    client.publish("house/sonoff1/state", "1"); // Send a status update
     digitalWrite(relayPin, HIGH);
   } else if(payload[0] == 48)       // Message "0" in ASCII (turn outputs OFF)
   {
     digitalWrite(ledPin, HIGH);     // LED is active-low, so this turns it off
-    client.publish("house/sonoff2/state", "0"); //send a status update
+    client.publish("house/sonoff1/state", "0"); //send a status update
     digitalWrite(relayPin, LOW);
   } else {
     Serial.println("Unknown value");
@@ -93,6 +93,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
+  WiFi.hostname("Sonoff1");
   WiFi.begin(ssid, password);
   Serial.println("WiFi begun");
 
@@ -107,7 +108,7 @@ void setup() {
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-   ArduinoOTA.setHostname("sonoff_2");
+   ArduinoOTA.setHostname("sonoff1");
 
   // No authentication by default
   // ArduinoOTA.setPassword((const char *)"123");
