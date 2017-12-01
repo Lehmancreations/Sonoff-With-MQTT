@@ -47,12 +47,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if(payload[0] == 49)              // Message "1" in ASCII (turn outputs ON)
   {
     digitalWrite(ledPin, LOW);      // LED is active-low, so this turns it on
-    client.publish("house/sonoff1/state", "1"); // Send a status update
+    client.publish("house/sonoff2/state", "1"); // Send a status update
     digitalWrite(relayPin, HIGH);
   } else if(payload[0] == 48)       // Message "0" in ASCII (turn outputs OFF)
   {
     digitalWrite(ledPin, HIGH);     // LED is active-low, so this turns it off
-    client.publish("house/sonoff/state", "0"); //send a status update
+    client.publish("house/sonoff2/state", "0"); //send a status update
     digitalWrite(relayPin, LOW);
   } else {
     Serial.println("Unknown value");
@@ -95,6 +95,7 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.println("WiFi begun");
+
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.println("Connection Failed! Rebooting...");
     delay(5000);
@@ -106,7 +107,7 @@ void setup() {
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-   ArduinoOTA.setHostname("sonoff_1");
+   ArduinoOTA.setHostname("sonoff_2");
 
   // No authentication by default
   // ArduinoOTA.setPassword((const char *)"123");
