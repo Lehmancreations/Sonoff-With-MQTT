@@ -3,7 +3,7 @@
  * update support. Subscribes to a topic and watches for a message of
  * either "0" (turn off LED and relay) or "1" (turn on LED and relay)
  * 
- * Script based on superhouse.tv code but customized to add MQTT authorization
+ * Script based on https://github.com/SuperHouse/BasicOTARelay but customized to fit my needs
  */
 
 #include <ESP8266WiFi.h>
@@ -25,6 +25,12 @@ IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
 const char* mqttuser = "******";
 const char* mqttpass = "******";
+
+/* Button Settings */
+long last_message_time        = 0;
+byte last_button_state        = 0;
+long minimum_message_interval = 5000;
+byte button_pin = 0;
 
 
 WiFiClient wificlient;
@@ -93,7 +99,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
-  WiFi.hostname("Sonoff1");
+  WiFi.hostname("sonoff1");
   WiFi.begin(ssid, password);
   Serial.println("WiFi begun");
 
@@ -138,8 +144,10 @@ void setup() {
   /* Set up the outputs. LED is active-low */
   pinMode(ledPin, OUTPUT);
   pinMode(relayPin, OUTPUT);
+  pinMode(button_pin, INPUT_PULLUP); // The input will be pulled LOW to trigger an action
   digitalWrite(ledPin, HIGH);
   digitalWrite(relayPin, LOW);
+  
 
   /* Prepare MQTT client */
   client.setServer(broker, 1883);
@@ -172,5 +180,23 @@ void loop() {
   if (client.connected())
   {
     client.loop();
+
+    /* Read the state of a connected button and act if it has been pressed */
+  if(digitalRead(button_pin) == LOW)
+  {
+    if(last_button_state == HIGH)
+    {
+      // HIGH to LOW transition: we just detected a button press!
+      if(millis() - last_message_time > minimum_message_interval)  // Allows debounce / rate limiting
+      {
+        // Send a message
+        client.publish("house/sonoff1/button","1");
+        last_message_time = millis();
+      }
+    }
+    last_button_state = LOW;
+  } else {
+    last_button_state = HIGH;
+  }
   }
 }
