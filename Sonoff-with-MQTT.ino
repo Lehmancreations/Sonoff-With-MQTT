@@ -12,8 +12,8 @@
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
 /* WiFi Settings */
-const char* ssid     = "*********";
-const char* password = "*********";
+const char* ssid     = "********";
+const char* password = "********";
 
 /* Sonoff Outputs */
 const int relayPin = 12;  // Active high
@@ -21,10 +21,12 @@ const int ledPin   = 13;  // Active low
 
 /* MQTT Settings */
 const char* mqttTopic = "house/sonoff1";   // MQTT topic
+const char* mqttTopic2 = "house/sonoff1/led"; //MQTT topic 2
+
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
-const char* mqttuser = "******";
-const char* mqttpass = "******";
+const char* mqttuser = "********";
+const char* mqttpass = "********";
 
 /* Button Settings */
 long last_message_time        = 0;
@@ -49,24 +51,40 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
+   if (strcmp(topic,mqttTopic)==0){
+
   // Examine only the first character of the message
   if(payload[0] == 49)              // Message "1" in ASCII (turn outputs ON)
   {
-    digitalWrite(ledPin, LOW);      // LED is active-low, so this turns it on
     client.publish("house/sonoff1/state", "1"); // Send a status update
     digitalWrite(relayPin, HIGH);
   } else if(payload[0] == 48)       // Message "0" in ASCII (turn outputs OFF)
   {
-    digitalWrite(ledPin, HIGH);     // LED is active-low, so this turns it off
     client.publish("house/sonoff1/state", "0"); //send a status update
     digitalWrite(relayPin, LOW);
   } else {
     Serial.println("Unknown value");
   }
+  }
+
+
+ if (strcmp(topic,mqttTopic2)==0){
+ if(payload[0] == 49)              // Message "1" in ASCII (turn outputs ON)
+  {
+    digitalWrite(ledPin, LOW);      // LED is active-low, so this turns it on
+    
+  } else if(payload[0] == 48)       // Message "0" in ASCII (turn outputs OFF)
+  {
+    digitalWrite(ledPin, HIGH);     // LED is active-low, so this turns it off
+   
+  } else {
+    Serial.println("Unknown value");
+  }
+
   
 }
 
-
+}
 
 
 
@@ -82,6 +100,7 @@ void reconnect() {
     if (client.connect(CLIENT_ID, mqttuser,mqttpass)) {
       Serial.println("connected");
       client.subscribe(mqttTopic);
+      client.subscribe(mqttTopic2);
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
