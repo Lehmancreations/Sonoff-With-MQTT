@@ -11,4 +11,4 @@ customized for my needs
 
 
 
-On the newer Sonoffs you need to use DOUT as the flash mode
+On my Sonoffs I needed to use DOUT as the flash mode
