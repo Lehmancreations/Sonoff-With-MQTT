@@ -12,3 +12,5 @@ customized for my needs
 
 
 On my Sonoffs I needed to use DOUT as the flash mode
+
+Please see the <a href="https://github.com/Lehmancreations/Sonoff-With-MQTT/wiki">Wiki</a> for more information
