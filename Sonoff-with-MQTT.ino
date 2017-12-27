@@ -1,5 +1,5 @@
 /*
- *  Firmware for Itead Studio Sonoff with OTA
+ * Firmware for Itead Studio Sonoff with OTA
  * update support. Subscribes to a topic and watches for a message of
  * either "0" (turn relay) or "1" (turn on relay) 
  * Subscribes to second topic to turn on and off the LED with 1 or 0
@@ -23,7 +23,8 @@ const int ledPin   = 13;  // Active low
 
 /* MQTT Settings */
 const char* mqttTopic = "house/sonoff1";   // MQTT Relay topic
-const char* mqttTopic2 = "house/sonoff1/led"; //MQTT LED topic 
+const char* mqttTopic2 = "house/sonoff1/led"; // MQTT LED topic 
+const char* buttonPressTopic = "house/sonoff1/button"; // MQTT Button Press Topic
 
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
@@ -211,7 +212,7 @@ void loop() {
       if(millis() - last_message_time > minimum_message_interval)  // Allows debounce / rate limiting
       {
         // Send a message
-        client.publish("house/sonoff1/button","1");
+        client.publish(buttonPressTopic,"1");
         last_message_time = millis();
       }
     }
