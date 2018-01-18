@@ -13,9 +13,18 @@
 #include <WiFiUdp.h>
 #include <PubSubClient.h>
 #include <ArduinoOTA.h>
+
+/* 
+ *  The following include allows you to put credentials in an include file
+ *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mwttuser and mqttpass in the MQTT settings area.
+ *  You will then need to comment out the line directly following 
+*/
+#include "credentials.h" /* Comment out this line if you are not using a credentials.h file */
+
 /* WiFi Settings */
-const char* ssid     = "********";
-const char* password = "********";
+
+// const char* ssid     = "******";
+// const char* password = "******";
 
 /* Sonoff Outputs */
 const int relayPin = 12;  // Active high
@@ -25,11 +34,13 @@ const int ledPin   = 13;  // Active low
 const char* mqttTopic = "house/sonoff1";   // MQTT Relay topic
 const char* mqttTopic2 = "house/sonoff1/led"; // MQTT LED topic 
 const char* buttonPressTopic = "house/sonoff1/button"; // MQTT Button Press Topic
+const char* willTopic = "house/sonoff1/status"; // Topic for birth and will messages
+const char* willMessage = "offline"; // Message to send when sonoff is offline
 
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
-const char* mqttuser = "********";
-const char* mqttpass = "********";
+// const char* mqttuser ="******";
+// const char* mqttpass = "******";
 
 /* Button Settings */
 long last_message_time        = 0;
@@ -59,11 +70,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // Examine only the first character of the message
   if(payload[0] == 49)              // Message "1" in ASCII (turn outputs ON)
   {
-    client.publish("house/sonoff1/state", "1"); // Send a status update
+    client.publish(willTopic, "1"); // Send a status update
     digitalWrite(relayPin, HIGH);
   } else if(payload[0] == 48)       // Message "0" in ASCII (turn outputs OFF)
   {
-    client.publish("house/sonoff1/state", "0"); //send a status update
+    client.publish(willTopic, "0"); //send a status update
     digitalWrite(relayPin, LOW);
   } else {
     Serial.println("Unknown value");
@@ -100,10 +111,11 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect(CLIENT_ID, mqttuser,mqttpass)) {
+    if (client.connect(CLIENT_ID, mqttuser,mqttpass,willTopic,0,0,willMessage)) {
       Serial.println("connected");
       client.subscribe(mqttTopic);
       client.subscribe(mqttTopic2);
+      client.publish(willTopic, "online"); //send online anouncement
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
