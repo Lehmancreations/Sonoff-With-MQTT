@@ -16,7 +16,7 @@
 
 #define DHT22 // If defined then include and make use of the DHT22 Sensor 
 
-#ifdef DHT22 
+#ifdef DHT22 //If the DHT22 is defined 
   #include "DHT.h"
   #define DHTPIN 14
   #define DHTTYPE DHT22
@@ -199,7 +199,7 @@ void setup() {
   client.setServer(broker, 1883);
   client.setCallback(callback);
 
-#ifdef DHT22
+#ifdef DHT22 // If using a DHT22 then start the sensor
  dht.begin();
 #endif    
 }
@@ -250,7 +250,7 @@ void loop() {
   }
 
 #ifdef DHT22
-/* Read DHT22 Sensor */
+/* Read DHT22 Sensor if defined  */
 
  if(millis() - dht_last_message_time > dht_minimum_message_interval)  // Allows debounce / rate limiting
       {
