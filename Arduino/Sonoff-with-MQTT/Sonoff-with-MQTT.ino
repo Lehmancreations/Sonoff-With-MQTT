@@ -16,7 +16,7 @@
 
 /* 
  *  The following include allows you to put credentials in an include file
- *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mwttuser and mqttpass in the MQTT settings area.
+ *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mqttuser and mqttpass in the MQTT settings area.
  *  You will then need to comment out the line directly following 
 */
 #include "credentials.h" /* Comment out this line if you are not using a credentials.h file */
