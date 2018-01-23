@@ -11,13 +11,13 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-#include <PubSubClient.h>
+#include <PubSubClient.h> https://github.com/knolleary/pubsubclient
 #include <ArduinoOTA.h>
 
 #define DHT22 // If defined then include and make use of the DHT22 Sensor 
 
 #ifdef DHT22 //If the DHT22 is defined 
-  #include "DHT.h"
+  #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
   #define DHTPIN 14
   #define DHTTYPE DHT22
   /* Allows rate limiting on sensor readings */
@@ -43,14 +43,14 @@ const int relayPin = 12;  // Active high
 const int ledPin   = 13;  // Active low
 
 /* MQTT Settings */
-const char* mqttTopic = "house/sonoff1";   // MQTT Relay topic
-const char* mqttTopic2 = "house/sonoff1/led"; // MQTT LED topic 
-const char* buttonPressTopic = "house/sonoff1/button"; // MQTT Button Press Topic
-const char* willTopic = "house/sonoff1/status"; // Topic for birth and will messages
+const char* mqttTopic = "house/sonoff2";   // MQTT Relay topic
+const char* mqttTopic2 = "house/sonoff2/led"; // MQTT LED topic 
+const char* buttonPressTopic = "house/sonoff2/button"; // MQTT Button Press Topic
+const char* willTopic = "house/sonoff2/status"; // Topic for birth and will messages
 const char* willMessage = "offline"; // Message to send when sonoff is offline
 
 IPAddress broker(10,1,10,4);          // Address of the MQTT broker
-#define CLIENT_ID "sonoff1"         // Client ID to send to the broker
+#define CLIENT_ID "sonoff2"         // Client ID to send to the broker
 // const char* mqttuser ="******";
 // const char* mqttpass = "******";
 
@@ -145,7 +145,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
-  WiFi.hostname("sonoff1");
+  WiFi.hostname("sonoff2");
   WiFi.begin(ssid, password);
   Serial.println("WiFi begun");
 
@@ -160,7 +160,7 @@ void setup() {
   // ArduinoOTA.setPort(8266);
 
   // Hostname defaults to esp8266-[ChipID]
-   ArduinoOTA.setHostname("sonoff1");
+   ArduinoOTA.setHostname("sonoff2");
 
   // No authentication by default
   // ArduinoOTA.setPassword((const char *)"123");
@@ -265,8 +265,8 @@ void loop() {
              return;
          }
 
-      client.publish("house/sonoff1/humidity", String(h).c_str()); // Send a status update
-       client.publish("house/sonoff1/temp", String(f).c_str()); // Send a status update
+      client.publish("house/sonoff2/humidity", String(h).c_str()); // Send a status update
+       client.publish("house/sonoff2/temp", String(f).c_str()); // Send a status update
        dht_last_message_time = millis();
 
     }
