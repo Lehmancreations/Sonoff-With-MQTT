@@ -11,7 +11,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
-#include <PubSubClient.h>
+#include <PubSubClient.h> // https://github.com/knolleary/pubsubclient 
 #include <ArduinoOTA.h>
 
 /* 
