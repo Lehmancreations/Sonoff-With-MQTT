@@ -265,8 +265,8 @@ void loop() {
              return;
          }
 
-      client.publish("house/sonoff2/humidity", String(h).c_str()); // Send a status update
-       client.publish("house/sonoff2/temp", String(f).c_str()); // Send a status update
+      client.publish("house/sonoff1/humidity", String(h).c_str()); // Send a status update
+       client.publish("house/sonoff1/temp", String(f).c_str()); // Send a status update
        dht_last_message_time = millis();
 
     }
