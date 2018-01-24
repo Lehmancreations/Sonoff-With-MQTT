@@ -14,6 +14,18 @@
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient 
 #include <ArduinoOTA.h>
 
+// #define DHT22 // If defined then include and make use of the DHT22 Sensor 
+
+#ifdef DHT22 //If the DHT22 is defined 
+  #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
+  #define DHTPIN 14
+  #define DHTTYPE DHT22
+  /* Allows rate limiting on sensor readings */
+  long dht_last_message_time        = 0;
+  long dht_minimum_message_interval = 10000;
+  DHT dht(DHTPIN, DHTTYPE);
+#endif
+
 /* 
  *  The following include allows you to put credentials in an include file
  *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mqttuser and mqttpass in the MQTT settings area.
@@ -186,6 +198,10 @@ void setup() {
   /* Prepare MQTT client */
   client.setServer(broker, 1883);
   client.setCallback(callback);
+
+#ifdef DHT22 // If using a DHT22 then start the sensor
+ dht.begin();
+#endif    
 }
 
 /**
@@ -232,5 +248,30 @@ void loop() {
   } else {
     last_button_state = HIGH;
   }
+
+#ifdef DHT22
+/* Read DHT22 Sensor if defined  */
+
+ if(millis() - dht_last_message_time > dht_minimum_message_interval)  // Allows debounce / rate limiting
+      {
+
+        float h = dht.readHumidity();
+        // Read temperature as Fahrenheit (isFahrenheit = true)
+        float f = dht.readTemperature(true);
+
+        // Check if any reads fail
+         if (isnan(h) || isnan(f)) {
+             Serial.println("Failed to read from DHT sensor!");
+             return;
+         }
+
+      client.publish("house/sonoff2/humidity", String(h).c_str()); // Send a status update
+       client.publish("house/sonoff2/temp", String(f).c_str()); // Send a status update
+       dht_last_message_time = millis();
+
+    }
+
+#endif
+  
   }
 }
