@@ -14,7 +14,7 @@
 #include <PubSubClient.h> https://github.com/knolleary/pubsubclient
 #include <ArduinoOTA.h>
 
-#define DHT22 // If defined then include and make use of the DHT22 Sensor 
+// #define DHT22 // If defined then include and make use of the DHT22 Sensor 
 
 #ifdef DHT22 //If the DHT22 is defined 
   #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
