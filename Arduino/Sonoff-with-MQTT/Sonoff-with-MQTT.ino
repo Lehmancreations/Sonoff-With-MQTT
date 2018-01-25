@@ -8,22 +8,21 @@
  * Script based on https://github.com/SuperHouse/BasicOTARelay but customized to fit my needs
  */
 
- const char* firmwarever = "30dc51720f69b110b3ef38ab46175fb5ba2d42ea";
+const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <PubSubClient.h> // https://github.com/knolleary/pubsubclient 
 #include <ArduinoOTA.h>
-// Needed for wifi manager
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 //for LED status
 #include <Ticker.h>
+#include "credentials.h" /* Used for definiations */
 Ticker ticker;
 
-// #define DHT22 // If defined then include and make use of the DHT22 Sensor 
 
 #ifdef DHT22 //If the DHT22 is defined 
   #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
@@ -44,7 +43,7 @@ ESP8266WebServer server(80);
  *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mqttuser and mqttpass in the MQTT settings area.
  *  You will then need to comment out the line directly following 
 */
-#include "credentials.h" /* Comment out this line if you are not using a credentials.h file */
+
 
 /* WiFi Settings */
 
@@ -271,6 +270,7 @@ void setup() {
  *******************/
    server.on("/reset_wlan", []() {
    server.send(200, "text/plain", "Resetting WLAN and restarting..." );
+    delay(1000);
     WiFiManager wifiManager;
     wifiManager.resetSettings();
     ESP.restart();
@@ -284,6 +284,7 @@ void setup() {
 
   server.on("/restart", []() {
     server.send(200, "text/plain", "restarting..." );
+    delay(1000);
     ESP.restart();
   });
 
