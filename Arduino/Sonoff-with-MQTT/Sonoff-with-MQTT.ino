@@ -23,18 +23,6 @@ const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 #include "credentials.h" /* Used for mqtt currently */
 #include "definitions.h" /* Used to define things*/
 
-/*************************
- * Set up Ticker 
- *************************/
-Ticker ticker;
-void tick()  //for boot up status
-{
-  //toggle state
-  int state = digitalRead(ledPin);  // get the current state of GPIO1 pin
-  digitalWrite(ledPin, !state);     // set pin to the opposite state
-}
-
-
 /*******************
  * Set up the web server
  *******************/
@@ -79,6 +67,17 @@ PubSubClient client(wificlient);
   long dht_minimum_message_interval = 10000;
   DHT dht(DHTPIN, DHTTYPE);
 #endif
+
+/*************************
+ * Set up Ticker 
+ *************************/
+Ticker ticker;
+void tick()  //for boot up status
+{
+  //toggle state
+  int state = digitalRead(ledPin);  // get the current state of GPIO1 pin
+  digitalWrite(ledPin, !state);     // set pin to the opposite state
+}
 
 
 /************************************
@@ -149,7 +148,7 @@ void reconnect() {
       delay(5000);
     }
   }
-
+}
 /*************************************
  * Set up Wifi manager callback
  * gets called when WiFiManager enters configuration mode
@@ -165,7 +164,7 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 }
 
 
-}
+
 
 /*******************************
  * Setup
