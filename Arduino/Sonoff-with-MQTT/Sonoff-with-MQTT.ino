@@ -8,6 +8,8 @@
  * Script based on https://github.com/SuperHouse/BasicOTARelay but customized to fit my needs
  */
 
+ const char* firmwarever = "30dc51720f69b110b3ef38ab46175fb5ba2d42ea";
+
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -33,6 +35,10 @@ Ticker ticker;
   DHT dht(DHTPIN, DHTTYPE);
 #endif
 
+/*
+ * Set up the web server
+ */
+ESP8266WebServer server(80);
 /* 
  *  The following include allows you to put credentials in an include file
  *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mqttuser and mqttpass in the MQTT settings area.
@@ -70,6 +76,8 @@ byte button_pin = 0;
 
 WiFiClient wificlient;
 PubSubClient client(wificlient);
+
+
 
 
 /*
@@ -188,6 +196,8 @@ void setup() {
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
+ // WiFi.hostname("sonoff1"); Maybe need this see if it works with out it
+  wifi_station_set_hostname("sonoff1");
   WiFiManager wifiManager;
   //reset settings - for testing
   //wifiManager.resetSettings();
@@ -195,13 +205,13 @@ void setup() {
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
 
-WiFi.hostname("sonoff1");
+
 
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
-  if (!wifiManager.autoConnect("Sonoff1")) {
+  if (!wifiManager.autoConnect("sonoff1")) {
     Serial.println("failed to connect and hit timeout");
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
@@ -212,7 +222,7 @@ WiFi.hostname("sonoff1");
   Serial.println("connected...yeey :)");
   ticker.detach();
   //turn LED off
-  digitalWrite(BUILTIN_LED, HIGH);
+  digitalWrite(ledPin, HIGH);
 
 
   // Port defaults to 8266
@@ -255,25 +265,45 @@ WiFi.hostname("sonoff1");
 #ifdef DHT22 // If using a DHT22 then start the sensor
  dht.begin();
 #endif    
+
+/*******************
+ * Web handlers 
+ *******************/
+   server.on("/reset_wlan", []() {
+   server.send(200, "text/plain", "Resetting WLAN and restarting..." );
+    WiFiManager wifiManager;
+    wifiManager.resetSettings();
+    ESP.restart();
+  });
+
+  server.on("/start_config_ap", []() {
+       server.send(200, "text/plain", "Starting config AP ..." );
+    WiFiManager wifiManager;
+    wifiManager.startConfigPortal("sonoff1");
+  });
+
+  server.on("/restart", []() {
+    server.send(200, "text/plain", "restarting..." );
+    ESP.restart();
+  });
+
+  server.on("/firmware", []() {
+    server.send(200, "text/plain", firmwarever );
+  
+  });
+server.begin();
+
 }
 
+
+
 /**
- * Main
+ * Main Loop Here
  */
 void loop() {
   ArduinoOTA.handle();
-  if (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print("Connecting to ");
-    Serial.print(ssid);
-    Serial.println("...");
-    WiFi.begin(ssid, password);
-
-    if (WiFi.waitForConnectResult() != WL_CONNECTED)
-      return;
-    Serial.println("WiFi connected");
-  }
-
+  server.handleClient(); //for web server
+ 
   if (WiFi.status() == WL_CONNECTED) {
     if (!client.connected()) {
       reconnect();
