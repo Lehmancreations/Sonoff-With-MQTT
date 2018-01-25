@@ -20,7 +20,8 @@ const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 //for LED status
 #include <Ticker.h>
-#include "credentials.h" /* Used for definiations */
+#include "credentials.h" /* Used for mqtt currently */
+#include "definitions.h" /* Used to define things*/
 
 /*************************
  * Set up Ticker 
