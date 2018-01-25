@@ -10,6 +10,7 @@
 
 const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 
+#include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -20,7 +21,7 @@ const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 //for LED status
 #include <Ticker.h>
-#include "credentials.h" /* Used for mqtt currently */
+#include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include "definitions.h" /* Used to define things*/
 
 /*******************
@@ -40,7 +41,7 @@ const char* buttonPressTopic = "house/sonoff1/button"; // MQTT Button Press Topi
 const char* willTopic = "house/sonoff1/status"; // Topic for birth and will messages
 const char* willMessage = "offline"; // Message to send when sonoff is offline
 
-IPAddress broker(10,1,10,4);          // Address of the MQTT broker
+// IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
 // const char* mqttuser ="******";
 // const char* mqttpass = "******";
@@ -79,6 +80,22 @@ void tick()  //for boot up status
   digitalWrite(ledPin, !state);     // set pin to the opposite state
 }
 
+
+/************************************
+ * Define default values for the mqtt and file saving
+ ***********************************/
+char mqtt_server[40];
+char mqtt_user[32];
+char mqtt_pass[32];
+
+//flag for saving data
+bool shouldSaveConfig = false;
+
+//callback notifying us of the need to save config
+void saveConfigCallback () {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
 
 /************************************
  * MQTT callback to process incoming messages
@@ -135,7 +152,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect(CLIENT_ID, mqttuser,mqttpass,willTopic,0,0,willMessage)) {
+    if (client.connect(CLIENT_ID, mqtt_user,mqtt_pass,willTopic,0,0,willMessage)) {
       Serial.println("connected");
       client.subscribe(mqttTopic);
       client.subscribe(mqttTopic2);
@@ -165,7 +182,6 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 
 
 
-
 /*******************************
  * Setup
  *******************************/
@@ -182,16 +198,67 @@ void setup() {
  // start ticker with 0.5 because we start in AP mode and try to connect
   ticker.attach(0.6, tick);
 
-  //WiFiManager
+
+/****************************
+ * Read Config
+ ****************************/
+ //read configuration from FS json
+  Serial.println("mounting FS...");
+
+  if (SPIFFS.begin()) {
+    Serial.println("mounted file system");
+    if (SPIFFS.exists("/config.json")) {
+      //file exists, reading and loading
+      Serial.println("reading config file");
+      File configFile = SPIFFS.open("/config.json", "r");
+      if (configFile) {
+        Serial.println("opened config file");
+        size_t size = configFile.size();
+        // Allocate a buffer to store contents of the file.
+        std::unique_ptr<char[]> buf(new char[size]);
+
+        configFile.readBytes(buf.get(), size);
+        DynamicJsonBuffer jsonBuffer;
+        JsonObject& json = jsonBuffer.parseObject(buf.get());
+        json.printTo(Serial);
+        if (json.success()) {
+          Serial.println("\nparsed json");
+
+          strcpy(mqtt_server, json["mqtt_server"]);
+          strcpy(mqtt_user, json["mqtt_user"]);
+          strcpy(mqtt_pass, json["mqtt_pass"]);
+        } else {
+          Serial.println("failed to load json config");
+        }
+      }
+    }
+  } else {
+    Serial.println("failed to mount FS");
+  }
+  
+/**************************
+ * WIFI Manager
+ **************************/
+ 
   //Local intialization. Once its business is done, there is no need to keep it around
   wifi_station_set_hostname("sonoff1");
+  WiFiManagerParameter custom_mqtt_server("server", "mqtt server", mqtt_server, 40);
+  WiFiManagerParameter custom_mqtt_user("user", "mqtt user", mqtt_user, 32);
+  WiFiManagerParameter custom_mqtt_pass("pass", "mqtt pass", mqtt_pass, 32);
   WiFiManager wifiManager;
  
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
 
+  // set callback that gets called when save notify 
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
 
+// add all your parameters here
 
+  wifiManager.addParameter(&custom_mqtt_server);
+  wifiManager.addParameter(&custom_mqtt_user);
+  wifiManager.addParameter(&custom_mqtt_pass);
+  
   /*************************************************
   * Try and connect and if fail go to AP mode
   ************************************************/
@@ -208,6 +275,34 @@ void setup() {
   //turn LED off
   digitalWrite(ledPin, HIGH);
 
+  /********************************
+   * Read and save the file system
+   *******************************/
+
+//read updated parameters
+  strcpy(mqtt_server, custom_mqtt_server.getValue());
+  strcpy(mqtt_user, custom_mqtt_user.getValue());
+  strcpy(mqtt_pass, custom_mqtt_pass.getValue());
+  
+  //save the custom parameters to FS
+  if (shouldSaveConfig) {
+    Serial.println("saving config");
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& json = jsonBuffer.createObject();
+    json["mqtt_server"] = mqtt_server;
+    json["mqtt_user"] = mqtt_user;
+    json["mqtt_pass"] = mqtt_pass;
+    
+    File configFile = SPIFFS.open("/config.json", "w");
+    if (!configFile) {
+      Serial.println("failed to open config file for writing");
+    }
+
+    json.printTo(Serial);
+    json.printTo(configFile);
+    configFile.close();
+    //end save
+  }
 
 /**************************
  * Set OTA up
@@ -235,7 +330,7 @@ void setup() {
   ArduinoOTA.begin();
   
   /* Prepare MQTT client */
-  client.setServer(broker, 1883);
+  client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 
   
@@ -255,12 +350,6 @@ void setup() {
     WiFiManager wifiManager;
     wifiManager.resetSettings();
     ESP.restart();
-  });
-
-  server.on("/start_config_ap", []() {
-       server.send(200, "text/plain", "Starting config AP ..." );
-    WiFiManager wifiManager;
-    wifiManager.startConfigPortal("sonoff1");
   });
 
   server.on("/restart", []() {
