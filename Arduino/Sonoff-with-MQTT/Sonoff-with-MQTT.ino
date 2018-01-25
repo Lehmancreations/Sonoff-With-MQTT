@@ -21,34 +21,24 @@ const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 //for LED status
 #include <Ticker.h>
 #include "credentials.h" /* Used for definiations */
+
+/*************************
+ * Set up Ticker 
+ *************************/
 Ticker ticker;
+void tick()  //for boot up status
+{
+  //toggle state
+  int state = digitalRead(ledPin);  // get the current state of GPIO1 pin
+  digitalWrite(ledPin, !state);     // set pin to the opposite state
+}
 
 
-#ifdef DHT22 //If the DHT22 is defined 
-  #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
-  #define DHTPIN 14
-  #define DHTTYPE DHT22
-  /* Allows rate limiting on sensor readings */
-  long dht_last_message_time        = 0;
-  long dht_minimum_message_interval = 10000;
-  DHT dht(DHTPIN, DHTTYPE);
-#endif
-
-/*
+/*******************
  * Set up the web server
- */
+ *******************/
 ESP8266WebServer server(80);
-/* 
- *  The following include allows you to put credentials in an include file
- *  If you do not have in credentials.h file please uncomment the ssid and password for WiFi and the mqttuser and mqttpass in the MQTT settings area.
- *  You will then need to comment out the line directly following 
-*/
 
-
-/* WiFi Settings */
-
-// const char* ssid     = "******";
-// const char* password = "******";
 
 /* Sonoff Outputs */
 const int relayPin = 12;  // Active high
@@ -72,41 +62,27 @@ byte last_button_state        = 0;
 long minimum_message_interval = 5000;
 byte button_pin = 0;
 
-
+/* Initialize pubsubclient*/
 WiFiClient wificlient;
 PubSubClient client(wificlient);
 
+/***************************
+ * Set the includes and settings for the DHT22
+ ***************************/
+#ifdef DHT22 //If the DHT22 is defined 
+  #include "DHT.h" //https://github.com/adafruit/DHT-sensor-library
+  #define DHTPIN 14
+  #define DHTTYPE DHT22
+  /* Allows rate limiting on sensor readings */
+  long dht_last_message_time        = 0;
+  long dht_minimum_message_interval = 10000;
+  DHT dht(DHTPIN, DHTTYPE);
+#endif
 
 
-
-/*
- * The following is for the wifi manager 
- */
-
-void tick()  //for boot up status
-{
-  //toggle state
-  int state = digitalRead(ledPin);  // get the current state of GPIO1 pin
-  digitalWrite(ledPin, !state);     // set pin to the opposite state
-}
-
-//gets called when WiFiManager enters configuration mode
-void configModeCallback (WiFiManager *myWiFiManager) {
-  Serial.println("Entered config mode");
-  Serial.println(WiFi.softAPIP());
-  //if you used auto generated SSID, print it
-  Serial.println(myWiFiManager->getConfigPortalSSID());
-  //entered config mode, make led toggle faster
-  ticker.attach(0.2, tick);
-}
-
-/*
- * End Wifi manager set up
- */
-
-/**
- * MQTT callback to process messages
- */
+/************************************
+ * MQTT callback to process incoming messages
+ ************************************/
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
@@ -151,12 +127,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 }
 
-
-
-
-/**
+/***********************************
  * Attempt connection to MQTT broker and subscribe to command topic
- */
+ ***********************************/
 void reconnect() {
   // Loop until we're reconnected
   while (!client.connected()) {
@@ -175,11 +148,27 @@ void reconnect() {
       delay(5000);
     }
   }
+
+/*************************************
+ * Set up Wifi manager callback
+ * gets called when WiFiManager enters configuration mode
+ **************************************/
+
+void configModeCallback (WiFiManager *myWiFiManager) {
+  Serial.println("Entered config mode");
+  Serial.println(WiFi.softAPIP());
+  //if you used auto generated SSID, print it
+  Serial.println(myWiFiManager->getConfigPortalSSID());
+  //entered config mode, make led toggle faster
+  ticker.attach(0.2, tick);
 }
 
-/**
+
+}
+
+/*******************************
  * Setup
- */
+ *******************************/
 void setup() {
   Serial.begin(115200);
 
@@ -195,21 +184,17 @@ void setup() {
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
- // WiFi.hostname("sonoff1"); Maybe need this see if it works with out it
   wifi_station_set_hostname("sonoff1");
   WiFiManager wifiManager;
-  //reset settings - for testing
-  //wifiManager.resetSettings();
-
+ 
   //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
   wifiManager.setAPCallback(configModeCallback);
 
 
 
-  //fetches ssid and pass and tries to connect
-  //if it does not connect it starts an access point with the specified name
-  //here  "AutoConnectAP"
-  //and goes into a blocking loop awaiting configuration
+  /*************************************************
+  * Try and connect and if fail go to AP mode
+  ************************************************/
   if (!wifiManager.autoConnect("sonoff1")) {
     Serial.println("failed to connect and hit timeout");
     //reset and try again, or maybe put it to deep sleep
@@ -224,14 +209,11 @@ void setup() {
   digitalWrite(ledPin, HIGH);
 
 
-  // Port defaults to 8266
-  // ArduinoOTA.setPort(8266);
+/**************************
+ * Set OTA up
+ **************************/
 
-  // Hostname defaults to esp8266-[ChipID]
    ArduinoOTA.setHostname("sonoff1");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword((const char *)"123");
   
   ArduinoOTA.onStart([]() {
     Serial.println("Start");
@@ -251,16 +233,15 @@ void setup() {
     else if (error == OTA_END_ERROR    ) Serial.println("End Failed");
   });
   ArduinoOTA.begin();
-  Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
   
-
-
   /* Prepare MQTT client */
   client.setServer(broker, 1883);
   client.setCallback(callback);
 
+  
+/*********************************
+ * If using the DHT22 start using the sensor
+ **********************************/
 #ifdef DHT22 // If using a DHT22 then start the sensor
  dht.begin();
 #endif    
@@ -298,24 +279,34 @@ server.begin();
 
 
 
-/**
+/**************************
  * Main Loop Here
- */
+ **************************/
 void loop() {
-  ArduinoOTA.handle();
+  ArduinoOTA.handle(); // for OTA
   server.handleClient(); //for web server
- 
+
+  
+ /*********************
+  * If connected to Wifi connect to MQTT
+  *********************/
   if (WiFi.status() == WL_CONNECTED) {
     if (!client.connected()) {
       reconnect();
     }
   }
-  
+
+
+  /*************************
+   * IF MQTT connected then do the incoming loop for messages 
+   *************************/
   if (client.connected())
   {
     client.loop();
 
-    /* Read the state of a connected button and act if it has been pressed */
+    /************************************ 
+    * Read the state of a connected button and act if it has been pressed 
+    **************************************/
   if(digitalRead(button_pin) == LOW)
   {
     if(last_button_state == HIGH)
@@ -333,6 +324,10 @@ void loop() {
     last_button_state = HIGH;
   }
 
+/**********************************
+ * If DHT22 then read sensor
+ **********************************/
+ 
 #ifdef DHT22
 /* Read DHT22 Sensor if defined  */
 
@@ -357,5 +352,5 @@ void loop() {
 
 #endif
   
-  }
-}
+  } // ends if MQTT client conected loop
+} // ends main loop
