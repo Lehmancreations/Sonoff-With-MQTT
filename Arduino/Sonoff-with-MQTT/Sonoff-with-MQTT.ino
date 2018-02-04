@@ -8,7 +8,7 @@
  * Script based on https://github.com/SuperHouse/BasicOTARelay but customized to fit my needs
  */
 
-const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
+
 
 #include <FS.h>                   //this needs to be first, or it all crashes and burns...
 #include <ESP8266WiFi.h>
@@ -23,6 +23,8 @@ const char* firmwarever = "b9e7e316adae31ec498b25839dd05216d935585f";
 #include <Ticker.h>
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include "definitions.h" /* Used to define things*/
+
+const char* firmwarever = "v1.2";
 
 /*******************
  * Set up the web server
@@ -43,8 +45,6 @@ const char* willMessage = "offline"; // Message to send when sonoff is offline
 
 // IPAddress broker(10,1,10,4);          // Address of the MQTT broker
 #define CLIENT_ID "sonoff1"         // Client ID to send to the broker
-// const char* mqttuser ="******";
-// const char* mqttpass = "******";
 
 /* Button Settings */
 long last_message_time        = 0;
@@ -163,6 +163,9 @@ void reconnect() {
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
+      // needed to not get caught in a loop if no MQTT info
+      ArduinoOTA.handle(); // for OTA
+      server.handleClient(); //for web server
     }
   }
 }
