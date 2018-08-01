@@ -21,7 +21,7 @@
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 //for LED status
 #include <Ticker.h>
-#include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
+#include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson  MUST be version 5 not version 6
 #include "definitions.h" /* Used to define things*/
 
 const char* firmwarever = "v1.2";
